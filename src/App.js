@@ -467,13 +467,13 @@ const OrdersPage = () => {
             const change = (order.paidAmount || 0) > order.totalCost ? (order.paidAmount || 0) - order.totalCost : 0;
             const remaining = order.totalCost - (order.paidAmount || 0) > 0 ? order.totalCost - (order.paidAmount || 0) : 0;
             let receiptContent = `
-                <div style="font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 300px; padding: 10px;">
+                <div style="font-family: 'Courier New', Courier, monospace; font-size: 10px; width: 210px; padding: 5px;">
                     <div style="text-align: center; margin-bottom: 10px;">
-                        <h2 style="margin: 0; font-size: 18px;">${storeSettings.storeName || 'SKETSA STICKER'}</h2>
-                        <p style="margin: 0;">${storeSettings.address || 'JL. KH. Syafii No.100 Kav.8 Suci'}</p>
+                        <h2 style="margin: 0; font-size: 16px; font-weight: bold;">${storeSettings.storeName || 'SKETSA STICKER'}</h2>
+                        <p style="margin: 0; font-size: 9px;">${storeSettings.address || 'JL. KH. Syafii No.100 Kav.8 Suci'}</p>
                     </div>
-                    <p>${new Date(order.createdAt).toLocaleTimeString('id-ID')} | ${new Date(order.createdAt).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                    <p>Kasir : ${order.createdBy?.username || 'Admin'}</p>
+                    <p style="font-size: 9px;">${new Date(order.createdAt).toLocaleTimeString('id-ID')} | ${new Date(order.createdAt).toLocaleDateString('id-ID')}</p>
+                    <p style="font-size: 9px;">Kasir : ${order.createdBy?.username || 'Admin'}</p>
                     <hr style="border-top: 1px dashed black; margin: 5px 0;">
                     <p style="font-weight: bold;">${order.customerName.toUpperCase()}</p>
                     <hr style="border-top: 1px dashed black; margin: 5px 0;">
@@ -483,9 +483,9 @@ const OrdersPage = () => {
                         return `
                             <div>
                                 <p style="margin: 0;">${index + 1}. ${product ? product.name : 'N/A'} <span style="float: right;">Rp ${itemPrice.toLocaleString('id-ID')}</span></p>
-                                ${product?.calculationMethod === 'dimensi' ? `<p style="margin: 0 0 0 15px; font-size: 11px;">Dimensi : ${item.width}x${item.height}</p>` : ''}
-                                <p style="margin: 0 0 0 15px; font-size: 11px;">Jumlah : ${item.quantity}X</p>
-                                ${item.description ? `<p style="margin: 0 0 0 15px; font-size: 11px;">Note : ${item.description}</p>` : ''}
+                                ${product?.calculationMethod === 'dimensi' ? `<p style="margin: 0 0 0 15px; font-size: 9px;">Dimensi : ${item.width}x${item.height}</p>` : ''}
+                                <p style="margin: 0 0 0 15px; font-size: 9px;">Jumlah : ${item.quantity}X</p>
+                                ${item.description ? `<p style="margin: 0 0 0 15px; font-size: 9px;">Note : ${item.description}</p>` : ''}
                             </div>
                         `;
                     }).join('')}
@@ -496,16 +496,16 @@ const OrdersPage = () => {
                     ${(order.discount || 0) > 0 ? `<p>Diskon (${order.discountDescription || ''}) <span style="float: right;">- Rp ${order.discount.toLocaleString('id-ID')}</span></p>` : ''}
                     ${(order.otherFees || 0) > 0 ? `<p>Biaya Lain (${order.otherFeesDescription || ''}) <span style="float: right;">Rp ${order.otherFees.toLocaleString('id-ID')}</span></p>` : ''}
                     <p style="font-weight: bold;">Total <span style="float: right;">Rp ${order.totalCost.toLocaleString('id-ID')}</span></p>
-                    <p>Bayar <span style="float: right;">Rp ${(order.paidAmount || 0).toLocaleString('id-ID')}</span></p>
-                    <p>${remaining > 0 ? 'Sisa' : 'Kembali'} <span style="float: right;">Rp ${remaining > 0 ? remaining.toLocaleString('id-ID') : change.toLocaleString('id-ID')}</span></p>
+                    <p style="font-weight: bold;">Bayar <span style="float: right;">Rp ${(order.paidAmount || 0).toLocaleString('id-ID')}</span></p>
+                    <p style="font-weight: bold;">${remaining > 0 ? 'Sisa' : 'Kembali'} <span style="float: right;">Rp ${remaining > 0 ? remaining.toLocaleString('id-ID') : change.toLocaleString('id-ID')}</span></p>
                     <hr style="border-top: 1px dashed black; margin: 5px 0;">
-                    <div style="text-align: center; margin-top: 10px;">
+                    <div style="text-align: center; margin-top: 10px; font-size: 9px;">
                         <p style="margin: 0;">Pesanan diproses setelah pembayaran</p>
                         <p style="margin: 0;">${storeSettings.receiptNotes || 'Terima Kasih Atas Kunjungan Anda'}</p>
                     </div>
                 </div>
             `;
-            const printWindow = window.open('', '', 'width=320,height=600');
+            const printWindow = window.open('', '', 'width=220,height=600');
             printWindow.document.write(receiptContent);
             printWindow.document.close();
             printWindow.print();
@@ -802,26 +802,12 @@ const ExpensesPage = () => {
 };
 
 const ReportsPage = () => {
-    const { orders, expenses, products } = useContext(AppContext);
+    const { orders, expenses, products, calculateItemPrice } = useContext(AppContext);
     const [reportType, setReportType] = useState('daily');
-    const [itemSalesReport, setItemSalesReport] = useState([]);
-    const [detailedReport, setDetailedReport] = useState([]);
+    const [detailedCashFlow, setDetailedCashFlow] = useState([]);
     
-    const [itemPage, setItemPage] = useState(1);
     const [detailedPage, setDetailedPage] = useState(1);
-    const itemsPerPage = 10;
-
-    const calculateItemPrice = useCallback((item) => {
-        const product = products.find(p => p.id === item.productId);
-        if (!product) return 0;
-        const quantity = item.quantity || 1;
-        switch (product.calculationMethod) {
-            case 'dimensi': return (item.width || 0) * (item.height || 0) * product.price * quantity;
-            case 'paket':
-            case 'satuan': return quantity * product.price;
-            default: return 0;
-        }
-    }, [products]);
+    const itemsPerPage = 15;
 
     useEffect(() => {
         const now = new Date();
@@ -837,60 +823,50 @@ const ReportsPage = () => {
             end = new Date(now.getFullYear() + 1, 0, 1);
         }
         
-        const currentOrders = orders.filter(o => {
-            const orderDate = new Date(o.createdAt);
-            return orderDate >= start && orderDate < end;
-        });
-        
-        const sales = {};
-        const detailed = [];
+        const cashFlowItems = [];
 
-        currentOrders.forEach(order => {
-            try {
-                const items = JSON.parse(order.items);
-                items.forEach(item => {
-                    const product = products.find(p => p.id === item.productId);
-                    if (product) {
-                        // Item Sales Report
-                        if (!sales[item.productId]) {
-                            sales[item.productId] = { name: product.name, quantity: 0, total: 0 };
-                        }
-                        const quantity = item.quantity || 1;
-                        sales[item.productId].quantity += quantity;
-                        const itemPrice = calculateItemPrice(item);
-                        sales[item.productId].total += itemPrice;
-
-                        // Detailed Transaction Report
-                        const proportion = order.totalCost > 0 ? itemPrice / order.totalCost : 0;
-                        const paidAmountForItem = (order.paidAmount || 0) * proportion;
-                        
-                        detailed.push({
-                            tanggal: new Date(order.createdAt).toLocaleDateString('id-ID'),
-                            namaCustomer: order.customerName,
-                            jenisOrder: product.name,
-                            ukuran: product.calculationMethod === 'dimensi' ? `${item.width}x${item.height}` : product.calculationMethod,
-                            jumlah: quantity,
-                            cash: order.paymentMethod === 'Cash' ? paidAmountForItem : 0,
-                            transfer: order.paymentMethod === 'Transfer' ? paidAmountForItem : 0,
-                            total: itemPrice,
+        // Process payments from orders
+        orders.forEach(order => {
+            if (order.paymentHistory && order.paymentHistory.length > 0) {
+                order.paymentHistory.forEach(payment => {
+                    const paymentDate = new Date(payment.date);
+                    if (paymentDate >= start && paymentDate < end) {
+                        cashFlowItems.push({
+                            date: payment.date,
+                            tanggal: paymentDate.toLocaleDateString('id-ID'),
+                            keterangan: `Pembayaran Pesanan #${order.id} (${order.customerName})`,
+                            cashInCash: payment.method === 'Cash' ? payment.amount : 0,
+                            cashInTransfer: payment.method === 'Transfer' ? payment.amount : 0,
+                            cashOut: 0,
                         });
                     }
                 });
-            } catch(e) { console.error("Could not parse items for order:", order.id, e); }
+            }
         });
+
+        // Process expenses
+        expenses.forEach(expense => {
+            const expenseDate = new Date(expense.createdAt);
+            if (expenseDate >= start && expenseDate < end) {
+                cashFlowItems.push({
+                    date: expense.createdAt,
+                    tanggal: expenseDate.toLocaleDateString('id-ID'),
+                    keterangan: `Pengeluaran: ${expense.description}`,
+                    cashInCash: 0,
+                    cashInTransfer: 0,
+                    cashOut: expense.cost,
+                });
+            }
+        });
+
+        // Sort all items by date
+        cashFlowItems.sort((a, b) => new Date(a.date) - new Date(b.date));
         
-        setItemSalesReport(Object.values(sales));
-        setDetailedReport(detailed);
-        setItemPage(1);
+        setDetailedCashFlow(cashFlowItems);
         setDetailedPage(1);
 
-    }, [orders, expenses, products, reportType, calculateItemPrice]);
+    }, [orders, expenses, reportType]);
 
-    const cashIn = orders.filter(o => new Date(o.createdAt) >= new Date(new Date().setHours(0,0,0,0))).reduce((acc, o) => acc + (o.paidAmount || 0), 0);
-    const totalSales = orders.filter(o => new Date(o.createdAt) >= new Date(new Date().setHours(0,0,0,0))).reduce((acc, o) => acc + o.totalCost, 0);
-    const totalExpenses = expenses.filter(e => new Date(e.createdAt) >= new Date(new Date().setHours(0,0,0,0))).reduce((acc, e) => acc + e.cost, 0);
-    const profit = totalSales - totalExpenses;
-    const cashFlow = cashIn - totalExpenses;
 
     const downloadCSV = (data, filename) => {
         if (data.length === 0) return;
@@ -908,39 +884,24 @@ const ReportsPage = () => {
         document.body.removeChild(link);
     };
 
-    const downloadItemSalesReport = () => {
-        const dataForCSV = itemSalesReport.map(item => ({
-            "Nama Item": item.name,
-            "Jumlah Terjual": item.quantity,
-            "Total Penjualan": item.total
-        }));
-        downloadCSV(dataForCSV, 'laporan_penjualan_item');
-    };
-
     const downloadDetailedReport = () => {
-        const dataForCSV = detailedReport.map(item => ({
+        const dataForCSV = detailedCashFlow.map(item => ({
             "Tanggal": item.tanggal,
-            "Nama Customer": item.namaCustomer,
-            "Jenis Order": item.jenisOrder,
-            "Ukuran": item.ukuran,
-            "Jumlah": item.jumlah,
-            "Cash": item.cash,
-            "Transfer": item.transfer,
-            "Total": item.total
+            "Keterangan": item.keterangan,
+            "Kas Masuk (Cash)": item.cashInCash,
+            "Kas Masuk (Transfer)": item.cashInTransfer,
+            "Kas Keluar": item.cashOut
         }));
-        downloadCSV(dataForCSV, 'laporan_transaksi_rinci');
+        downloadCSV(dataForCSV, 'laporan_arus_kas_rinci');
     };
     
-    const paginatedItemSales = itemSalesReport.slice((itemPage - 1) * itemsPerPage, itemPage * itemsPerPage);
-    const totalItemPages = Math.ceil(itemSalesReport.length / itemsPerPage);
-    
-    const paginatedDetailed = detailedReport.slice((detailedPage - 1) * itemsPerPage, detailedPage * itemsPerPage);
-    const totalDetailedPages = Math.ceil(detailedReport.length / itemsPerPage);
+    const paginatedDetailed = detailedCashFlow.slice((detailedPage - 1) * itemsPerPage, detailedPage * itemsPerPage);
+    const totalDetailedPages = Math.ceil(detailedCashFlow.length / itemsPerPage);
 
     return (
         <div className="bg-white rounded-xl shadow-lg p-6 space-y-8">
             <div>
-                <h2 className="text-2xl font-bold mb-4">Ringkasan Laporan</h2>
+                <h2 className="text-2xl font-bold mb-4">Filter Laporan</h2>
                 <div className="flex space-x-4 mb-4">
                     <button onClick={() => setReportType('daily')} className={`px-4 py-2 rounded-lg ${reportType === 'daily' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Harian</button>
                     <button onClick={() => setReportType('monthly')} className={`px-4 py-2 rounded-lg ${reportType === 'monthly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Bulanan</button>
@@ -949,44 +910,28 @@ const ReportsPage = () => {
             </div>
 
             <div className="border-t pt-8">
-                <h2 className="text-2xl font-bold mb-4">Laporan Transaksi Rinci</h2>
+                <h2 className="text-2xl font-bold mb-4">Laporan Arus Kas Rinci</h2>
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white rounded-lg shadow">
                         <thead className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal"><tr>
-                            <th className="py-3 px-6 text-left">Tanggal</th><th className="py-3 px-6 text-left">Customer</th><th className="py-3 px-6 text-left">Jenis Order</th><th className="py-3 px-6 text-left">Ukuran</th><th className="py-3 px-6 text-left">Jumlah</th><th className="py-3 px-6 text-left">Cash</th><th className="py-3 px-6 text-left">Transfer</th><th className="py-3 px-6 text-left">Total</th>
+                            <th className="py-3 px-6 text-left">Tanggal</th><th className="py-3 px-6 text-left">Keterangan</th><th className="py-3 px-6 text-left">Kas Masuk (Cash)</th><th className="py-3 px-6 text-left">Kas Masuk (Transfer)</th><th className="py-3 px-6 text-left">Kas Keluar</th>
                         </tr></thead>
                         <tbody className="text-gray-600 text-sm font-light">
                             {paginatedDetailed.map((item, index) => (
                                 <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
-                                    <td className="py-3 px-6 text-left">{item.tanggal}</td><td className="py-3 px-6 text-left">{item.namaCustomer}</td><td className="py-3 px-6 text-left">{item.jenisOrder}</td><td className="py-3 px-6 text-left">{item.ukuran}</td><td className="py-3 px-6 text-left">{item.jumlah}</td><td className="py-3 px-6 text-left">Rp {Math.round(item.cash).toLocaleString('id-ID')}</td><td className="py-3 px-6 text-left">Rp {Math.round(item.transfer).toLocaleString('id-ID')}</td><td className="py-3 px-6 text-left">Rp {item.total.toLocaleString('id-ID')}</td>
+                                    <td className="py-3 px-6 text-left">{item.tanggal}</td>
+                                    <td className="py-3 px-6 text-left">{item.keterangan}</td>
+                                    <td className="py-3 px-6 text-left text-green-600">Rp {item.cashInCash.toLocaleString('id-ID')}</td>
+                                    <td className="py-3 px-6 text-left text-blue-600">Rp {item.cashInTransfer.toLocaleString('id-ID')}</td>
+                                    <td className="py-3 px-6 text-left text-red-600">Rp {item.cashOut.toLocaleString('id-ID')}</td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
                 <div className="flex justify-between items-center mt-4">
-                    <button onClick={downloadDetailedReport} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600">Unduh Laporan Rinci</button>
+                    <button onClick={downloadDetailedReport} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600">Unduh Laporan Arus Kas</button>
                     {totalDetailedPages > 1 && <div className="flex items-center space-x-2"><button onClick={() => setDetailedPage(p => Math.max(1, p - 1))} disabled={detailedPage === 1} className="px-3 py-1 border rounded-lg disabled:opacity-50">Prev</button><span>Halaman {detailedPage} dari {totalDetailedPages}</span><button onClick={() => setDetailedPage(p => Math.min(totalDetailedPages, p + 1))} disabled={detailedPage === totalDetailedPages} className="px-3 py-1 border rounded-lg disabled:opacity-50">Next</button></div>}
-                </div>
-            </div>
-
-            <div className="border-t pt-8">
-                <h2 className="text-2xl font-bold mb-4">Laporan Penjualan per Item</h2>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full bg-white rounded-lg shadow">
-                        <thead><tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal"><th className="py-3 px-6 text-left">Nama Item</th><th className="py-3 px-6 text-left">Jumlah Terjual</th><th className="py-3 px-6 text-left">Total Penjualan</th></tr></thead>
-                        <tbody className="text-gray-600 text-sm font-light">
-                            {paginatedItemSales.map(item => (
-                                <tr key={item.name} className="border-b border-gray-200 hover:bg-gray-100">
-                                    <td className="py-3 px-6 text-left">{item.name}</td><td className="py-3 px-6 text-left">{item.quantity}</td><td className="py-3 px-6 text-left">Rp {item.total.toLocaleString('id-ID')}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                <div className="flex justify-between items-center mt-4">
-                    <button onClick={downloadItemSalesReport} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600">Unduh Laporan Item</button>
-                    {totalItemPages > 1 && <div className="flex items-center space-x-2"><button onClick={() => setItemPage(p => Math.max(1, p - 1))} disabled={itemPage === 1} className="px-3 py-1 border rounded-lg disabled:opacity-50">Prev</button><span>Halaman {itemPage} dari {totalItemPages}</span><button onClick={() => setItemPage(p => Math.min(totalItemPages, p + 1))} disabled={itemPage === totalItemPages} className="px-3 py-1 border rounded-lg disabled:opacity-50">Next</button></div>}
                 </div>
             </div>
         </div>
