@@ -223,7 +223,7 @@ const Navbar = () => {
         { name: 'Pembayaran', page: 'payments', roles: ['kasir', 'owner'] },
         { name: 'Pelanggan', page: 'customers', roles: ['kasir', 'superviser', 'owner'] },
         { name: 'Pengeluaran', page: 'expenses', roles: ['kasir', 'superviser', 'owner'] },
-        { name: 'Laporan', page: 'reports', roles: ['kasir','superviser', 'owner'] },
+        { name: 'Laporan', page: 'reports', roles: ['superviser', 'owner'] },
         { name: 'Manajemen Akun', page: 'account-management', roles: ['owner'] },
         { name: 'Manajemen Produk', page: 'product-management', roles: ['desainer', 'superviser', 'owner'] },
         { name: 'Manajemen Toko', page: 'store-management', roles: ['owner'] },
@@ -498,43 +498,55 @@ const OrdersPage = () => {
             const change = (order.paidAmount || 0) > order.totalCost ? (order.paidAmount || 0) - order.totalCost : 0;
             const remaining = order.totalCost - (order.paidAmount || 0) > 0 ? order.totalCost - (order.paidAmount || 0) : 0;
             let receiptContent = `
-                <div style="font-family: 'Arial', sans-serif; font-size: 16px; width: 300px; padding: 5px;">
-                    <div style="text-align: center; margin-bottom: 10px;">
-                        ${storeSettings.logoUrl ? `<img src="${storeSettings.logoUrl}" alt="Logo" style="max-width: 100px; margin: 0 auto 5px auto; display: block;"/>` : ''}
-                        <h2 style="margin: 0; font-size: 16px; font-weight: bold;">${storeSettings.storeName || 'SKETSA STICKER'}</h2>
-                        <p style="margin: 0; font-size: 9px;">${storeSettings.address || 'JL. KH. Syafii No.100 Kav.8 Suci'}</p>
-                    </div>
-                    <p style="font-size: 9px;">${new Date(order.createdAt).toLocaleTimeString('id-ID')} | ${new Date(order.createdAt).toLocaleDateString('id-ID')}</p>
-                    <p style="font-size: 9px;">Kasir : ${order.createdBy?.username || 'Admin'}</p>
-                    <hr style="border-top: 1px dashed black; margin: 5px 0;">
-                    <p style="font-weight: bold;">${order.customerName.toUpperCase()}</p>
-                    <hr style="border-top: 1px dashed black; margin: 5px 0;">
-                    ${parsedItems.map((item, index) => {
-                        const product = products.find(p => p.id === item.productId);
-                        const itemPrice = calculateItemPrice(item);
-                        return `
-                            <div>
-                                <p style="margin: 0; font-weight: bold;">${index + 1}. ${product ? product.name : 'N/A'} <span style="float: right;">Rp ${itemPrice.toLocaleString('id-ID')}</span></p>
-                                <p style="margin: 0 0 0 15px; font-size: 9px;">Jumlah : ${item.quantity}X</p>
-                                ${item.description ? `<p style="margin: 0 0 0 15px; font-size: 9px;">Note : ${item.description}</p>` : ''}
+                <html>
+                    <head>
+                        <style>
+                            @media print {
+                                @page { margin: 0; }
+                                body { margin: 0; }
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div style="font-family: 'Courier New', Courier, monospace; font-size: 10px; width: 210px; padding: 5px;">
+                            <div style="text-align: center; margin-bottom: 10px;">
+                                ${storeSettings.logoUrl ? `<img src="${storeSettings.logoUrl}" alt="Logo" style="max-width: 100px; margin: 0 auto 5px auto; display: block;"/>` : ''}
+                                <h2 style="margin: 0; font-size: 16px; font-weight: bold;">${storeSettings.storeName || 'SKETSA STICKER'}</h2>
+                                <p style="margin: 0; font-size: 9px;">${storeSettings.address || 'JL. KH. Syafii No.100 Kav.8 Suci'}</p>
                             </div>
-                        `;
-                    }).join('')}
-                    <hr style="border-top: 1px dashed black; margin: 5px 0;">
-                    <p>Catatan : ${(order.otherFeesDescription || '')}</p>
-                    <hr style="border-top: 1px dashed black; margin: 5px 0;">
-                    <p>Subtotal <span style="float: right;">Rp ${(order.subtotal || 0).toLocaleString('id-ID')}</span></p>
-                    ${(order.discount || 0) > 0 ? `<p>Diskon (${order.discountDescription || ''}) <span style="float: right;">- Rp ${order.discount.toLocaleString('id-ID')}</span></p>` : ''}
-                    ${(order.otherFees || 0) > 0 ? `<p>Biaya Lain (${order.otherFeesDescription || ''}) <span style="float: right;">Rp ${order.otherFees.toLocaleString('id-ID')}</span></p>` : ''}
-                    <p style="font-weight: bold;">Total <span style="float: right;">Rp ${order.totalCost.toLocaleString('id-ID')}</span></p>
-                    <p style="font-weight: bold;">Bayar <span style="float: right;">Rp ${(order.paidAmount || 0).toLocaleString('id-ID')}</span></p>
-                    <p style="font-weight: bold;">${remaining > 0 ? 'Sisa' : 'Kembali'} <span style="float: right;">Rp ${remaining > 0 ? remaining.toLocaleString('id-ID') : change.toLocaleString('id-ID')}</span></p>
-                    <hr style="border-top: 1px dashed black; margin: 5px 0;">
-                    <div style="text-align: center; margin-top: 10px; font-size: 9px;">
-                        <p style="margin: 0;">Pesanan diproses setelah pembayaran</p>
-                        <p style="margin: 0;">${storeSettings.receiptNotes || 'Terima Kasih Atas Kunjungan Anda'}</p>
-                    </div>
-                </div>
+                            <p style="font-size: 9px;">${new Date(order.createdAt).toLocaleTimeString('id-ID')} | ${new Date(order.createdAt).toLocaleDateString('id-ID')}</p>
+                            <p style="font-size: 9px;">Kasir : ${order.createdBy?.username || 'Admin'}</p>
+                            <hr style="border-top: 1px dashed black; margin: 5px 0;">
+                            <p style="font-weight: bold;">${order.customerName.toUpperCase()}</p>
+                            <hr style="border-top: 1px dashed black; margin: 5px 0;">
+                            ${parsedItems.map((item, index) => {
+                                const product = products.find(p => p.id === item.productId);
+                                const itemPrice = calculateItemPrice(item);
+                                return `
+                                    <div>
+                                        <p style="margin: 0; font-weight: bold;">${index + 1}. ${product ? product.name : 'N/A'} <span style="float: right;">Rp ${itemPrice.toLocaleString('id-ID')}</span></p>
+                                        <p style="margin: 0 0 0 15px; font-size: 9px;">Jumlah : ${item.quantity}X</p>
+                                        ${item.description ? `<p style="margin: 0 0 0 15px; font-size: 9px;">Note : ${item.description}</p>` : ''}
+                                    </div>
+                                `;
+                            }).join('')}
+                            <hr style="border-top: 1px dashed black; margin: 5px 0;">
+                            <p>Catatan : ${(order.otherFeesDescription || '')}</p>
+                            <hr style="border-top: 1px dashed black; margin: 5px 0;">
+                            <p>Subtotal <span style="float: right;">Rp ${(order.subtotal || 0).toLocaleString('id-ID')}</span></p>
+                            ${(order.discount || 0) > 0 ? `<p>Diskon (${order.discountDescription || ''}) <span style="float: right;">- Rp ${order.discount.toLocaleString('id-ID')}</span></p>` : ''}
+                            ${(order.otherFees || 0) > 0 ? `<p>Biaya Lain (${order.otherFeesDescription || ''}) <span style="float: right;">Rp ${order.otherFees.toLocaleString('id-ID')}</span></p>` : ''}
+                            <p style="font-weight: bold;">Total <span style="float: right;">Rp ${order.totalCost.toLocaleString('id-ID')}</span></p>
+                            <p style="font-weight: bold;">Bayar <span style="float: right;">Rp ${(order.paidAmount || 0).toLocaleString('id-ID')}</span></p>
+                            <p style="font-weight: bold;">${remaining > 0 ? 'Sisa' : 'Kembali'} <span style="float: right;">Rp ${remaining > 0 ? remaining.toLocaleString('id-ID') : change.toLocaleString('id-ID')}</span></p>
+                            <hr style="border-top: 1px dashed black; margin: 5px 0;">
+                            <div style="text-align: center; margin-top: 10px; font-size: 9px;">
+                                <p style="margin: 0;">Pesanan diproses setelah pembayaran</p>
+                                <p style="margin: 0;">${storeSettings.receiptNotes || 'Terima Kasih Atas Kunjungan Anda'}</p>
+                            </div>
+                        </div>
+                    </body>
+                </html>
             `;
             const printWindow = window.open('', '', 'width=220,height=600');
             printWindow.document.write(receiptContent);
