@@ -223,7 +223,7 @@ const Navbar = () => {
         { name: 'Pembayaran', page: 'payments', roles: ['kasir', 'owner'] },
         { name: 'Pelanggan', page: 'customers', roles: ['kasir', 'superviser', 'owner'] },
         { name: 'Pengeluaran', page: 'expenses', roles: ['kasir', 'superviser', 'owner'] },
-        { name: 'Laporan', page: 'reports', roles: ['superviser', 'owner'] },
+        { name: 'Laporan', page: 'reports', roles: ['kasir','superviser', 'owner'] },
         { name: 'Manajemen Akun', page: 'account-management', roles: ['owner'] },
         { name: 'Manajemen Produk', page: 'product-management', roles: ['desainer', 'superviser', 'owner'] },
         { name: 'Manajemen Toko', page: 'store-management', roles: ['owner'] },
