@@ -954,13 +954,16 @@ const ReportsPage = () => {
     const downloadCSV = (data, filename) => {
         if (data.length === 0) return;
         const headers = Object.keys(data[0]);
-        let csvContent = "data:text/csv;charset=utf-8," + headers.join(";") + "\n";
+        let csvContent = headers.join(";") + "\n";
         data.forEach(row => {
             const values = headers.map(header => `"${row[header]}"`);
             csvContent += values.join(";") + "\n";
         });
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const link = document.createElement("a");
-        link.setAttribute("href", encodeURI(csvContent));
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
         link.setAttribute("download", `${filename}_${reportType}.csv`);
         document.body.appendChild(link);
         link.click();
