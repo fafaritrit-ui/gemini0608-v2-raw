@@ -8,6 +8,7 @@ const BellIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-
 const ChartBarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>;
 const DocumentTextIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
 const UserGroupIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>;
+const ArrowDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-4 4m0 0l-4-4m4 4V3" /></svg>;
 
 
 // Konfigurasi Firebase dari Environment Variables
@@ -281,12 +282,16 @@ const Login = () => {
 };
 
 const DashboardPage = () => {
-    const { orders, products } = useContext(AppContext);
+    const { orders, products, expenses } = useContext(AppContext);
 
     const today = new Date().setHours(0, 0, 0, 0);
     const salesToday = orders
         .filter(o => new Date(o.createdAt).setHours(0, 0, 0, 0) === today)
         .reduce((sum, o) => sum + o.totalCost, 0);
+        
+    const expensesToday = expenses
+        .filter(e => new Date(e.createdAt).setHours(0, 0, 0, 0) === today)
+        .reduce((sum, e) => sum + e.cost, 0);
 
     const unpaidOrders = orders.filter(o => o.paymentStatus !== 'Lunas').length;
 
@@ -311,12 +316,19 @@ const DashboardPage = () => {
     return (
         <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="bg-blue-100 p-6 rounded-lg flex items-center">
                     <ChartBarIcon />
                     <div className="ml-4">
                         <p className="text-gray-600">Penjualan Hari Ini</p>
                         <p className="text-2xl font-bold">Rp {salesToday.toLocaleString('id-ID')}</p>
+                    </div>
+                </div>
+                 <div className="bg-red-100 p-6 rounded-lg flex items-center">
+                    <ArrowDownIcon />
+                    <div className="ml-4">
+                        <p className="text-gray-600">Pengeluaran Hari Ini</p>
+                        <p className="text-2xl font-bold">Rp {expensesToday.toLocaleString('id-ID')}</p>
                     </div>
                 </div>
                 <div className="bg-green-100 p-6 rounded-lg flex items-center">
@@ -469,6 +481,7 @@ const OrdersPage = () => {
             let receiptContent = `
                 <div style="font-family: 'Courier New', Courier, monospace; font-size: 10px; width: 210px; padding: 5px;">
                     <div style="text-align: center; margin-bottom: 10px;">
+                        ${storeSettings.logoUrl ? `<img src="${storeSettings.logoUrl}" alt="Logo" style="max-width: 100px; margin: 0 auto 5px auto; display: block;"/>` : ''}
                         <h2 style="margin: 0; font-size: 16px; font-weight: bold;">${storeSettings.storeName || 'SKETSA STICKER'}</h2>
                         <p style="margin: 0; font-size: 9px;">${storeSettings.address || 'JL. KH. Syafii No.100 Kav.8 Suci'}</p>
                     </div>
@@ -482,7 +495,7 @@ const OrdersPage = () => {
                         const itemPrice = calculateItemPrice(item);
                         return `
                             <div>
-                                <p style="margin: 0;">${index + 1}. ${product ? product.name : 'N/A'} <span style="float: right;">Rp ${itemPrice.toLocaleString('id-ID')}</span></p>
+                                <p style="margin: 0; font-weight: bold;">${index + 1}. ${product ? product.name : 'N/A'} <span style="float: right;">Rp ${itemPrice.toLocaleString('id-ID')}</span></p>
                                 ${product?.calculationMethod === 'dimensi' ? `<p style="margin: 0 0 0 15px; font-size: 9px;">Dimensi : ${item.width}x${item.height}</p>` : ''}
                                 <p style="margin: 0 0 0 15px; font-size: 9px;">Jumlah : ${item.quantity}X</p>
                                 ${item.description ? `<p style="margin: 0 0 0 15px; font-size: 9px;">Note : ${item.description}</p>` : ''}
@@ -614,7 +627,8 @@ const PaymentsPage = () => {
             amount: paymentAmount,
             method: paymentDetails.method,
             date: new Date().toISOString(),
-            user: { userId, username }
+            user: { userId, username },
+            type: paymentDetails.type
         });
 
         try {
@@ -802,12 +816,26 @@ const ExpensesPage = () => {
 };
 
 const ReportsPage = () => {
-    const { orders, expenses, products, calculateItemPrice } = useContext(AppContext);
+    const { orders, expenses, products } = useContext(AppContext);
     const [reportType, setReportType] = useState('daily');
     const [detailedCashFlow, setDetailedCashFlow] = useState([]);
+    const [itemSalesReport, setItemSalesReport] = useState([]);
     
     const [detailedPage, setDetailedPage] = useState(1);
+    const [itemPage, setItemPage] = useState(1);
     const itemsPerPage = 15;
+
+    const calculateItemPrice = useCallback((item) => {
+        const product = products.find(p => p.id === item.productId);
+        if (!product) return 0;
+        const quantity = item.quantity || 1;
+        switch (product.calculationMethod) {
+            case 'dimensi': return (item.width || 0) * (item.height || 0) * product.price * quantity;
+            case 'paket':
+            case 'satuan': return quantity * product.price;
+            default: return 0;
+        }
+    }, [products]);
 
     useEffect(() => {
         const now = new Date();
@@ -824,21 +852,52 @@ const ReportsPage = () => {
         }
         
         const cashFlowItems = [];
+        const sales = {};
 
         // Process payments from orders
         orders.forEach(order => {
             if (order.paymentHistory && order.paymentHistory.length > 0) {
-                order.paymentHistory.forEach(payment => {
+                order.paymentHistory.forEach((payment, index) => {
                     const paymentDate = new Date(payment.date);
                     if (paymentDate >= start && paymentDate < end) {
-                        cashFlowItems.push({
-                            date: payment.date,
-                            tanggal: paymentDate.toLocaleDateString('id-ID'),
-                            keterangan: `Pembayaran Pesanan #${order.id} (${order.customerName})`,
-                            cashInCash: payment.method === 'Cash' ? payment.amount : 0,
-                            cashInTransfer: payment.method === 'Transfer' ? payment.amount : 0,
-                            cashOut: 0,
-                        });
+                        // If it's the first payment (DP), break it down by item
+                        if (index === 0) {
+                             try {
+                                const items = JSON.parse(order.items);
+                                items.forEach(item => {
+                                    const product = products.find(p => p.id === item.productId);
+                                    if(product) {
+                                        const itemPrice = calculateItemPrice(item);
+                                        const proportion = order.totalCost > 0 ? itemPrice / order.totalCost : 0;
+                                        const paidAmountForItem = payment.amount * proportion;
+                                        
+                                        cashFlowItems.push({
+                                            date: payment.date,
+                                            tanggal: paymentDate.toLocaleDateString('id-ID'),
+                                            keterangan: `DP #${order.id} (${order.customerName})`,
+                                            itemProduk: product.name,
+                                            dimensi: product.calculationMethod === 'dimensi' ? `${item.width}x${item.height}` : '-',
+                                            jumlah: item.quantity,
+                                            cashInCash: payment.method === 'Cash' ? paidAmountForItem : 0,
+                                            cashInTransfer: payment.method === 'Transfer' ? paidAmountForItem : 0,
+                                            cashOut: 0,
+                                        });
+                                    }
+                                });
+                            } catch(e) { console.error("Could not parse items for order:", order.id, e); }
+                        } else { // For subsequent payments (Pelunasan)
+                             cashFlowItems.push({
+                                date: payment.date,
+                                tanggal: paymentDate.toLocaleDateString('id-ID'),
+                                keterangan: `Pelunasan #${order.id} (${order.customerName})`,
+                                itemProduk: '-',
+                                dimensi: '-',
+                                jumlah: '-',
+                                cashInCash: payment.method === 'Cash' ? payment.amount : 0,
+                                cashInTransfer: payment.method === 'Transfer' ? payment.amount : 0,
+                                cashOut: 0,
+                            });
+                        }
                     }
                 });
             }
@@ -852,6 +911,9 @@ const ReportsPage = () => {
                     date: expense.createdAt,
                     tanggal: expenseDate.toLocaleDateString('id-ID'),
                     keterangan: `Pengeluaran: ${expense.description}`,
+                    itemProduk: '-',
+                    dimensi: '-',
+                    jumlah: '-',
                     cashInCash: 0,
                     cashInTransfer: 0,
                     cashOut: expense.cost,
@@ -859,13 +921,34 @@ const ReportsPage = () => {
             }
         });
 
+        // Generate Item Sales Report for the period
+        const currentOrders = orders.filter(o => new Date(o.createdAt) >= start && new Date(o.createdAt) < end);
+        currentOrders.forEach(order => {
+             try {
+                const items = JSON.parse(order.items);
+                items.forEach(item => {
+                    const product = products.find(p => p.id === item.productId);
+                    if (product) {
+                        if (!sales[item.productId]) {
+                            sales[item.productId] = { name: product.name, quantity: 0, total: 0 };
+                        }
+                        const quantity = item.quantity || 1;
+                        sales[item.productId].quantity += quantity;
+                        sales[item.productId].total += calculateItemPrice(item);
+                    }
+                });
+            } catch(e) { /* ignore */ }
+        });
+
         // Sort all items by date
         cashFlowItems.sort((a, b) => new Date(a.date) - new Date(b.date));
         
         setDetailedCashFlow(cashFlowItems);
+        setItemSalesReport(Object.values(sales));
         setDetailedPage(1);
+        setItemPage(1);
 
-    }, [orders, expenses, reportType]);
+    }, [orders, expenses, products, reportType, calculateItemPrice]);
 
 
     const downloadCSV = (data, filename) => {
@@ -883,11 +966,23 @@ const ReportsPage = () => {
         link.click();
         document.body.removeChild(link);
     };
+    
+    const downloadItemSalesReport = () => {
+        const dataForCSV = itemSalesReport.map(item => ({
+            "Nama Item": item.name,
+            "Jumlah Terjual": item.quantity,
+            "Total Penjualan": item.total
+        }));
+        downloadCSV(dataForCSV, 'laporan_penjualan_item');
+    };
 
     const downloadDetailedReport = () => {
         const dataForCSV = detailedCashFlow.map(item => ({
             "Tanggal": item.tanggal,
             "Keterangan": item.keterangan,
+            "Item Produk": item.itemProduk,
+            "Dimensi": item.dimensi,
+            "Jumlah": item.jumlah,
             "Kas Masuk (Cash)": item.cashInCash,
             "Kas Masuk (Transfer)": item.cashInTransfer,
             "Kas Keluar": item.cashOut
@@ -897,6 +992,9 @@ const ReportsPage = () => {
     
     const paginatedDetailed = detailedCashFlow.slice((detailedPage - 1) * itemsPerPage, detailedPage * itemsPerPage);
     const totalDetailedPages = Math.ceil(detailedCashFlow.length / itemsPerPage);
+    
+    const paginatedItemSales = itemSalesReport.slice((itemPage - 1) * itemsPerPage, itemPage * itemsPerPage);
+    const totalItemPages = Math.ceil(itemSalesReport.length / itemsPerPage);
 
     return (
         <div className="bg-white rounded-xl shadow-lg p-6 space-y-8">
@@ -914,15 +1012,18 @@ const ReportsPage = () => {
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white rounded-lg shadow">
                         <thead className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal"><tr>
-                            <th className="py-3 px-6 text-left">Tanggal</th><th className="py-3 px-6 text-left">Keterangan</th><th className="py-3 px-6 text-left">Kas Masuk (Cash)</th><th className="py-3 px-6 text-left">Kas Masuk (Transfer)</th><th className="py-3 px-6 text-left">Kas Keluar</th>
+                            <th className="py-3 px-6 text-left">Tanggal</th><th className="py-3 px-6 text-left">Keterangan</th><th className="py-3 px-6 text-left">Item</th><th className="py-3 px-6 text-left">Dimensi</th><th className="py-3 px-6 text-left">Jumlah</th><th className="py-3 px-6 text-left">Cash</th><th className="py-3 px-6 text-left">Transfer</th><th className="py-3 px-6 text-left">Keluar</th>
                         </tr></thead>
                         <tbody className="text-gray-600 text-sm font-light">
                             {paginatedDetailed.map((item, index) => (
                                 <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
                                     <td className="py-3 px-6 text-left">{item.tanggal}</td>
                                     <td className="py-3 px-6 text-left">{item.keterangan}</td>
-                                    <td className="py-3 px-6 text-left text-green-600">Rp {item.cashInCash.toLocaleString('id-ID')}</td>
-                                    <td className="py-3 px-6 text-left text-blue-600">Rp {item.cashInTransfer.toLocaleString('id-ID')}</td>
+                                    <td className="py-3 px-6 text-left">{item.itemProduk}</td>
+                                    <td className="py-3 px-6 text-left">{item.dimensi}</td>
+                                    <td className="py-3 px-6 text-left">{item.jumlah}</td>
+                                    <td className="py-3 px-6 text-left text-green-600">Rp {Math.round(item.cashInCash).toLocaleString('id-ID')}</td>
+                                    <td className="py-3 px-6 text-left text-blue-600">Rp {Math.round(item.cashInTransfer).toLocaleString('id-ID')}</td>
                                     <td className="py-3 px-6 text-left text-red-600">Rp {item.cashOut.toLocaleString('id-ID')}</td>
                                 </tr>
                             ))}
@@ -932,6 +1033,26 @@ const ReportsPage = () => {
                 <div className="flex justify-between items-center mt-4">
                     <button onClick={downloadDetailedReport} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600">Unduh Laporan Arus Kas</button>
                     {totalDetailedPages > 1 && <div className="flex items-center space-x-2"><button onClick={() => setDetailedPage(p => Math.max(1, p - 1))} disabled={detailedPage === 1} className="px-3 py-1 border rounded-lg disabled:opacity-50">Prev</button><span>Halaman {detailedPage} dari {totalDetailedPages}</span><button onClick={() => setDetailedPage(p => Math.min(totalDetailedPages, p + 1))} disabled={detailedPage === totalDetailedPages} className="px-3 py-1 border rounded-lg disabled:opacity-50">Next</button></div>}
+                </div>
+            </div>
+
+            <div className="border-t pt-8">
+                <h2 className="text-2xl font-bold mb-4">Laporan Penjualan per Item</h2>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white rounded-lg shadow">
+                        <thead><tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal"><th className="py-3 px-6 text-left">Nama Item</th><th className="py-3 px-6 text-left">Jumlah Terjual</th><th className="py-3 px-6 text-left">Total Penjualan</th></tr></thead>
+                        <tbody className="text-gray-600 text-sm font-light">
+                            {paginatedItemSales.map(item => (
+                                <tr key={item.name} className="border-b border-gray-200 hover:bg-gray-100">
+                                    <td className="py-3 px-6 text-left">{item.name}</td><td className="py-3 px-6 text-left">{item.quantity}</td><td className="py-3 px-6 text-left">Rp {item.total.toLocaleString('id-ID')}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+                <div className="flex justify-between items-center mt-4">
+                    <button onClick={downloadItemSalesReport} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600">Unduh Laporan Item</button>
+                    {totalItemPages > 1 && <div className="flex items-center space-x-2"><button onClick={() => setItemPage(p => Math.max(1, p - 1))} disabled={itemPage === 1} className="px-3 py-1 border rounded-lg disabled:opacity-50">Prev</button><span>Halaman {itemPage} dari {totalItemPages}</span><button onClick={() => setItemPage(p => Math.min(totalItemPages, p + 1))} disabled={itemPage === totalItemPages} className="px-3 py-1 border rounded-lg disabled:opacity-50">Next</button></div>}
                 </div>
             </div>
         </div>
