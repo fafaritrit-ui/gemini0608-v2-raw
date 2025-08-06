@@ -9,6 +9,7 @@ const ChartBarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-
 const DocumentTextIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>;
 const UserGroupIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-yellow-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>;
 const ArrowDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 17l-4 4m0 0l-4-4m4 4V3" /></svg>;
+const CashIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>;
 
 
 // Konfigurasi Firebase dari Environment Variables
@@ -293,6 +294,13 @@ const DashboardPage = () => {
         .filter(e => new Date(e.createdAt).setHours(0, 0, 0, 0) === today)
         .reduce((sum, e) => sum + e.cost, 0);
 
+    const totalCashIn = orders.reduce((sum, o) => {
+        const cashPayments = (o.paymentHistory || []).filter(p => p.method === 'Cash');
+        return sum + cashPayments.reduce((paymentSum, p) => paymentSum + p.amount, 0);
+    }, 0);
+    const totalExpenses = expenses.reduce((sum, e) => sum + e.cost, 0);
+    const currentCash = totalCashIn - totalExpenses;
+
     const unpaidOrders = orders.filter(o => o.paymentStatus !== 'Lunas').length;
 
     const itemSales = orders.reduce((acc, order) => {
@@ -316,7 +324,7 @@ const DashboardPage = () => {
     return (
         <div className="bg-white rounded-xl shadow-lg p-6">
             <h2 className="text-2xl font-bold mb-6">Dashboard</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-blue-100 p-6 rounded-lg flex items-center">
                     <ChartBarIcon />
                     <div className="ml-4">
@@ -338,11 +346,11 @@ const DashboardPage = () => {
                         <p className="text-2xl font-bold">{unpaidOrders}</p>
                     </div>
                 </div>
-                <div className="bg-yellow-100 p-6 rounded-lg flex items-center">
-                    <UserGroupIcon />
+                <div className="bg-purple-100 p-6 rounded-lg flex items-center">
+                    <CashIcon />
                      <div className="ml-4">
-                        <p className="text-gray-600">Total Pesanan Hari Ini</p>
-                        <p className="text-2xl font-bold">{orders.filter(o => new Date(o.createdAt).setHours(0, 0, 0, 0) === today).length}</p>
+                        <p className="text-gray-600">Total Kas Saat Ini</p>
+                        <p className="text-2xl font-bold">Rp {currentCash.toLocaleString('id-ID')}</p>
                     </div>
                 </div>
             </div>
@@ -852,7 +860,7 @@ const ReportsPage = () => {
         }
         
         const cashFlowItems = [];
-        const sales = {};
+        const sales = [];
 
         // Process payments from orders
         orders.forEach(order => {
@@ -878,8 +886,8 @@ const ReportsPage = () => {
                                             itemProduk: product.name,
                                             dimensi: product.calculationMethod === 'dimensi' ? `${item.width}x${item.height}` : '-',
                                             jumlah: item.quantity,
-                                            cashInCash: payment.method === 'Cash' ? paidAmountForItem : 0,
-                                            cashInTransfer: payment.method === 'Transfer' ? paidAmountForItem : 0,
+                                            cashInCash: payment.method === 'Cash' ? Math.round(paidAmountForItem) : 0,
+                                            cashInTransfer: payment.method === 'Transfer' ? Math.round(paidAmountForItem) : 0,
                                             cashOut: 0,
                                         });
                                     }
@@ -929,12 +937,13 @@ const ReportsPage = () => {
                 items.forEach(item => {
                     const product = products.find(p => p.id === item.productId);
                     if (product) {
-                        if (!sales[item.productId]) {
-                            sales[item.productId] = { name: product.name, quantity: 0, total: 0 };
-                        }
-                        const quantity = item.quantity || 1;
-                        sales[item.productId].quantity += quantity;
-                        sales[item.productId].total += calculateItemPrice(item);
+                        sales.push({
+                            namaPemesan: order.customerName,
+                            namaProduk: product.name,
+                            dimensi: product.calculationMethod === 'dimensi' ? `${item.width}x${item.height}` : '-',
+                            jumlah: item.quantity,
+                            harga: calculateItemPrice(item)
+                        });
                     }
                 });
             } catch(e) { /* ignore */ }
@@ -944,7 +953,7 @@ const ReportsPage = () => {
         cashFlowItems.sort((a, b) => new Date(a.date) - new Date(b.date));
         
         setDetailedCashFlow(cashFlowItems);
-        setItemSalesReport(Object.values(sales));
+        setItemSalesReport(sales);
         setDetailedPage(1);
         setItemPage(1);
 
@@ -972,9 +981,11 @@ const ReportsPage = () => {
     
     const downloadItemSalesReport = () => {
         const dataForCSV = itemSalesReport.map(item => ({
-            "Nama Item": item.name,
-            "Jumlah Terjual": item.quantity,
-            "Total Penjualan": item.total
+            "Nama Pemesan": item.namaPemesan,
+            "Nama Produk": item.namaProduk,
+            "Dimensi": item.dimensi,
+            "Jumlah": item.jumlah,
+            "Harga": item.harga
         }));
         downloadCSV(dataForCSV, 'laporan_penjualan_item');
     };
@@ -1043,11 +1054,15 @@ const ReportsPage = () => {
                 <h2 className="text-2xl font-bold mb-4">Laporan Penjualan per Item</h2>
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white rounded-lg shadow">
-                        <thead><tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal"><th className="py-3 px-6 text-left">Nama Item</th><th className="py-3 px-6 text-left">Jumlah Terjual</th><th className="py-3 px-6 text-left">Total Penjualan</th></tr></thead>
+                        <thead><tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal"><th className="py-3 px-6 text-left">Nama Pemesan</th><th className="py-3 px-6 text-left">Nama Produk</th><th className="py-3 px-6 text-left">Dimensi</th><th className="py-3 px-6 text-left">Jumlah</th><th className="py-3 px-6 text-left">Harga</th></tr></thead>
                         <tbody className="text-gray-600 text-sm font-light">
-                            {paginatedItemSales.map(item => (
-                                <tr key={item.name} className="border-b border-gray-200 hover:bg-gray-100">
-                                    <td className="py-3 px-6 text-left">{item.name}</td><td className="py-3 px-6 text-left">{item.quantity}</td><td className="py-3 px-6 text-left">Rp {item.total.toLocaleString('id-ID')}</td>
+                            {paginatedItemSales.map((item, index) => (
+                                <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
+                                    <td className="py-3 px-6 text-left">{item.namaPemesan}</td>
+                                    <td className="py-3 px-6 text-left">{item.namaProduk}</td>
+                                    <td className="py-3 px-6 text-left">{item.dimensi}</td>
+                                    <td className="py-3 px-6 text-left">{item.jumlah}</td>
+                                    <td className="py-3 px-6 text-left">Rp {item.harga.toLocaleString('id-ID')}</td>
                                 </tr>
                             ))}
                         </tbody>
