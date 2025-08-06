@@ -508,7 +508,7 @@ const OrdersPage = () => {
                         </style>
                     </head>
                     <body>
-                        <div style="font-family: 'Courier New', Courier, monospace; font-size: 10px; width: 210px; padding: 5px;">
+                        <div style="font-family: 'Arial', sans-serif; font-size: 16px; width: 210px; padding: 5px;">
                             <div style="text-align: center; margin-bottom: 10px;">
                                 ${storeSettings.logoUrl ? `<img src="${storeSettings.logoUrl}" alt="Logo" style="max-width: 100px; margin: 0 auto 5px auto; display: block;"/>` : ''}
                                 <h2 style="margin: 0; font-size: 16px; font-weight: bold;">${storeSettings.storeName || 'SKETSA STICKER'}</h2>
