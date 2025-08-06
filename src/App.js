@@ -475,17 +475,17 @@ const OrdersPage = () => {
                     <p>${new Date(order.createdAt).toLocaleTimeString('id-ID')} | ${new Date(order.createdAt).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                     <p>Kasir : ${order.createdBy?.username || 'Admin'}</p>
                     <hr style="border-top: 1px dashed black; margin: 5px 0;">
-                    <p style="font-weight: bold;">${order.customerName.toUpperCase()}</p> //bold nama
+                    <p style="font-weight: bold;">${order.customerName.toUpperCase()}</p> 
                     <hr style="border-top: 1px dashed black; margin: 5px 0;">
                     ${parsedItems.map((item, index) => {
                         const product = products.find(p => p.id === item.productId);
                         const itemPrice = calculateItemPrice(item);
                         return `
                             <div>
-                                <p style="margin: 0; font-weight: bold;">${index + 1}. ${product ? product.name : 'N/A'} <span style="float: right;">Rp ${itemPrice.toLocaleString('id-ID')}</span></p> //bold harga dan total
+                                <p style="margin: 0; font-weight: bold;">${index + 1}. ${product ? product.name : 'N/A'} <span style="float: right;">Rp ${itemPrice.toLocaleString('id-ID')}</span></p> 
                                 ${product?.calculationMethod === 'dimensi' ? `<p style="margin: 0 0 0 15px; font-size: 16px; font-weight: bold;">Dimensi : ${item.width}x${item.height}</p>` : ''}
-                                <p style="margin: 0 0 0 15px; font-size: 11px; font-weight: bold; ">Jumlah : ${item.quantity}X</p>
-                                ${item.description ? `<p style="margin: 0 0 0 15px; font-size: 11px; font-weight: bold;">Note : ${item.description}</p>` : ''}
+                                <p style="margin: 0 0 0 15px; font-size: 16px; font-weight: bold; ">Jumlah : ${item.quantity}X</p>
+                                ${item.description ? `<p style="margin: 0 0 0 15px; font-size: 16px; font-weight: bold;">Note : ${item.description}</p>` : ''}
                             </div>
                         `;
                     }).join('')}
