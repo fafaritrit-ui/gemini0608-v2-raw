@@ -467,7 +467,7 @@ const OrdersPage = () => {
             const change = (order.paidAmount || 0) > order.totalCost ? (order.paidAmount || 0) - order.totalCost : 0;
             const remaining = order.totalCost - (order.paidAmount || 0) > 0 ? order.totalCost - (order.paidAmount || 0) : 0;
             let receiptContent = `
-                <div style="font-family: 'Courier New', Courier, monospace; font-size: 16px; width: 300px; padding: 10px;">
+                <div style="font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 300px; padding: 10px;">
                     <div style="text-align: center; margin-bottom: 10px;">
                         <h2 style="margin: 0; font-size: 18px;">${storeSettings.storeName || 'SKETSA STICKER'}</h2>
                         <p style="margin: 0;">${storeSettings.address || 'JL. KH. Syafii No.100 Kav.8 Suci'}</p>
@@ -475,17 +475,17 @@ const OrdersPage = () => {
                     <p>${new Date(order.createdAt).toLocaleTimeString('id-ID')} | ${new Date(order.createdAt).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                     <p>Kasir : ${order.createdBy?.username || 'Admin'}</p>
                     <hr style="border-top: 1px dashed black; margin: 5px 0;">
-                    <p style="font-weight: bold;">${order.customerName.toUpperCase()}</p> 
+                    <p style="font-weight: bold;">${order.customerName.toUpperCase()}</p>
                     <hr style="border-top: 1px dashed black; margin: 5px 0;">
                     ${parsedItems.map((item, index) => {
                         const product = products.find(p => p.id === item.productId);
                         const itemPrice = calculateItemPrice(item);
                         return `
                             <div>
-                                <p style="margin: 0; font-weight: bold;">${index + 1}. ${product ? product.name : 'N/A'} <span style="float: right;">Rp ${itemPrice.toLocaleString('id-ID')}</span></p> 
-                                ${product?.calculationMethod === 'dimensi' ? `<p style="margin: 0 0 0 15px; font-size: 16px; font-weight: bold;">Dimensi : ${item.width}x${item.height}</p>` : ''}
-                                <p style="margin: 0 0 0 15px; font-size: 16px; font-weight: bold; ">Jumlah : ${item.quantity}X</p>
-                                ${item.description ? `<p style="margin: 0 0 0 15px; font-size: 16px; font-weight: bold;">Note : ${item.description}</p>` : ''}
+                                <p style="margin: 0;">${index + 1}. ${product ? product.name : 'N/A'} <span style="float: right;">Rp ${itemPrice.toLocaleString('id-ID')}</span></p>
+                                ${product?.calculationMethod === 'dimensi' ? `<p style="margin: 0 0 0 15px; font-size: 11px;">Dimensi : ${item.width}x${item.height}</p>` : ''}
+                                <p style="margin: 0 0 0 15px; font-size: 11px;">Jumlah : ${item.quantity}X</p>
+                                ${item.description ? `<p style="margin: 0 0 0 15px; font-size: 11px;">Note : ${item.description}</p>` : ''}
                             </div>
                         `;
                     }).join('')}
@@ -804,11 +804,24 @@ const ExpensesPage = () => {
 const ReportsPage = () => {
     const { orders, expenses, products } = useContext(AppContext);
     const [reportType, setReportType] = useState('daily');
-    const [filteredOrders, setFilteredOrders] = useState([]);
-    const [filteredExpenses, setFilteredExpenses] = useState([]);
     const [itemSalesReport, setItemSalesReport] = useState([]);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [detailedReport, setDetailedReport] = useState([]);
+    
+    const [itemPage, setItemPage] = useState(1);
+    const [detailedPage, setDetailedPage] = useState(1);
     const itemsPerPage = 10;
+
+    const calculateItemPrice = useCallback((item) => {
+        const product = products.find(p => p.id === item.productId);
+        if (!product) return 0;
+        const quantity = item.quantity || 1;
+        switch (product.calculationMethod) {
+            case 'dimensi': return (item.width || 0) * (item.height || 0) * product.price * quantity;
+            case 'paket':
+            case 'satuan': return quantity * product.price;
+            default: return 0;
+        }
+    }, [products]);
 
     useEffect(() => {
         const now = new Date();
@@ -829,38 +842,53 @@ const ReportsPage = () => {
             return orderDate >= start && orderDate < end;
         });
         
-        setFilteredOrders(currentOrders);
-        setFilteredExpenses(expenses.filter(e => new Date(e.createdAt) >= start && new Date(e.createdAt) < end));
-
-        // Generate Item Sales Report
         const sales = {};
+        const detailed = [];
+
         currentOrders.forEach(order => {
             try {
                 const items = JSON.parse(order.items);
                 items.forEach(item => {
                     const product = products.find(p => p.id === item.productId);
                     if (product) {
+                        // Item Sales Report
                         if (!sales[item.productId]) {
                             sales[item.productId] = { name: product.name, quantity: 0, total: 0 };
                         }
                         const quantity = item.quantity || 1;
                         sales[item.productId].quantity += quantity;
-                        const price = (product.calculationMethod === 'dimensi') 
-                            ? (item.width || 0) * (item.height || 0) * product.price * quantity
-                            : quantity * product.price;
-                        sales[item.productId].total += price;
+                        const itemPrice = calculateItemPrice(item);
+                        sales[item.productId].total += itemPrice;
+
+                        // Detailed Transaction Report
+                        const proportion = order.totalCost > 0 ? itemPrice / order.totalCost : 0;
+                        const paidAmountForItem = (order.paidAmount || 0) * proportion;
+                        
+                        detailed.push({
+                            tanggal: new Date(order.createdAt).toLocaleDateString('id-ID'),
+                            namaCustomer: order.customerName,
+                            jenisOrder: product.name,
+                            ukuran: product.calculationMethod === 'dimensi' ? `${item.width}x${item.height}` : product.calculationMethod,
+                            jumlah: quantity,
+                            cash: order.paymentMethod === 'Cash' ? paidAmountForItem : 0,
+                            transfer: order.paymentMethod === 'Transfer' ? paidAmountForItem : 0,
+                            total: itemPrice,
+                        });
                     }
                 });
             } catch(e) { console.error("Could not parse items for order:", order.id, e); }
         });
+        
         setItemSalesReport(Object.values(sales));
-        setCurrentPage(1);
+        setDetailedReport(detailed);
+        setItemPage(1);
+        setDetailedPage(1);
 
-    }, [orders, expenses, products, reportType]);
+    }, [orders, expenses, products, reportType, calculateItemPrice]);
 
-    const cashIn = filteredOrders.reduce((acc, o) => acc + (o.paidAmount || 0), 0);
-    const totalSales = filteredOrders.reduce((acc, o) => acc + o.totalCost, 0);
-    const totalExpenses = filteredExpenses.reduce((acc, e) => acc + e.cost, 0);
+    const cashIn = orders.filter(o => new Date(o.createdAt) >= new Date(new Date().setHours(0,0,0,0))).reduce((acc, o) => acc + (o.paidAmount || 0), 0);
+    const totalSales = orders.filter(o => new Date(o.createdAt) >= new Date(new Date().setHours(0,0,0,0))).reduce((acc, o) => acc + o.totalCost, 0);
+    const totalExpenses = expenses.filter(e => new Date(e.createdAt) >= new Date(new Date().setHours(0,0,0,0))).reduce((acc, e) => acc + e.cost, 0);
     const profit = totalSales - totalExpenses;
     const cashFlow = cashIn - totalExpenses;
 
@@ -880,14 +908,6 @@ const ReportsPage = () => {
         document.body.removeChild(link);
     };
 
-    const downloadFinancialReport = () => {
-        const data = [
-            ...filteredOrders.map(o => ({ Tipe: "Penjualan", Tanggal: new Date(o.createdAt).toLocaleDateString('id-ID'), Deskripsi: `Pesanan ${o.customerName}`, Jumlah: o.totalCost })),
-            ...filteredExpenses.map(e => ({ Tipe: "Pengeluaran", Tanggal: new Date(e.createdAt).toLocaleDateString('id-ID'), Deskripsi: e.description, Jumlah: -e.cost }))
-        ];
-        downloadCSV(data, 'laporan_keuangan');
-    };
-
     const downloadItemSalesReport = () => {
         const dataForCSV = itemSalesReport.map(item => ({
             "Nama Item": item.name,
@@ -896,26 +916,58 @@ const ReportsPage = () => {
         }));
         downloadCSV(dataForCSV, 'laporan_penjualan_item');
     };
+
+    const downloadDetailedReport = () => {
+        const dataForCSV = detailedReport.map(item => ({
+            "Tanggal": item.tanggal,
+            "Nama Customer": item.namaCustomer,
+            "Jenis Order": item.jenisOrder,
+            "Ukuran": item.ukuran,
+            "Jumlah": item.jumlah,
+            "Cash": item.cash,
+            "Transfer": item.transfer,
+            "Total": item.total
+        }));
+        downloadCSV(dataForCSV, 'laporan_transaksi_rinci');
+    };
     
-    const paginatedItems = itemSalesReport.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-    const totalPages = Math.ceil(itemSalesReport.length / itemsPerPage);
+    const paginatedItemSales = itemSalesReport.slice((itemPage - 1) * itemsPerPage, itemPage * itemsPerPage);
+    const totalItemPages = Math.ceil(itemSalesReport.length / itemsPerPage);
+    
+    const paginatedDetailed = detailedReport.slice((detailedPage - 1) * itemsPerPage, detailedPage * itemsPerPage);
+    const totalDetailedPages = Math.ceil(detailedReport.length / itemsPerPage);
 
     return (
         <div className="bg-white rounded-xl shadow-lg p-6 space-y-8">
             <div>
-                <h2 className="text-2xl font-bold mb-4">Laporan Keuangan</h2>
+                <h2 className="text-2xl font-bold mb-4">Ringkasan Laporan</h2>
                 <div className="flex space-x-4 mb-4">
                     <button onClick={() => setReportType('daily')} className={`px-4 py-2 rounded-lg ${reportType === 'daily' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Harian</button>
                     <button onClick={() => setReportType('monthly')} className={`px-4 py-2 rounded-lg ${reportType === 'monthly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Bulanan</button>
                     <button onClick={() => setReportType('yearly')} className={`px-4 py-2 rounded-lg ${reportType === 'yearly' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}>Tahunan</button>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 text-center">
-                    <div className="bg-blue-100 p-4 rounded-lg"><h3 className="text-xl font-semibold">Total Penjualan</h3><p className="text-2xl font-bold">Rp {totalSales.toLocaleString('id-ID')}</p></div>
-                    <div className="bg-red-100 p-4 rounded-lg"><h3 className="text-xl font-semibold">Total Pengeluaran</h3><p className="text-2xl font-bold">Rp {totalExpenses.toLocaleString('id-ID')}</p></div>
-                    <div className="bg-green-100 p-4 rounded-lg"><h3 className="text-xl font-semibold">Keuntungan (P&L)</h3><p className="text-2xl font-bold">Rp {profit.toLocaleString('id-ID')}</p></div>
-                    <div className="bg-purple-100 p-4 rounded-lg"><h3 className="text-xl font-semibold">Arus Kas Bersih</h3><p className="text-2xl font-bold">Rp {cashFlow.toLocaleString('id-ID')}</p></div>
+            </div>
+
+            <div className="border-t pt-8">
+                <h2 className="text-2xl font-bold mb-4">Laporan Transaksi Rinci</h2>
+                <div className="overflow-x-auto">
+                    <table className="min-w-full bg-white rounded-lg shadow">
+                        <thead className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal"><tr>
+                            <th className="py-3 px-6 text-left">Tanggal</th><th className="py-3 px-6 text-left">Customer</th><th className="py-3 px-6 text-left">Jenis Order</th><th className="py-3 px-6 text-left">Ukuran</th><th className="py-3 px-6 text-left">Jumlah</th><th className="py-3 px-6 text-left">Cash</th><th className="py-3 px-6 text-left">Transfer</th><th className="py-3 px-6 text-left">Total</th>
+                        </tr></thead>
+                        <tbody className="text-gray-600 text-sm font-light">
+                            {paginatedDetailed.map((item, index) => (
+                                <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
+                                    <td className="py-3 px-6 text-left">{item.tanggal}</td><td className="py-3 px-6 text-left">{item.namaCustomer}</td><td className="py-3 px-6 text-left">{item.jenisOrder}</td><td className="py-3 px-6 text-left">{item.ukuran}</td><td className="py-3 px-6 text-left">{item.jumlah}</td><td className="py-3 px-6 text-left">Rp {Math.round(item.cash).toLocaleString('id-ID')}</td><td className="py-3 px-6 text-left">Rp {Math.round(item.transfer).toLocaleString('id-ID')}</td><td className="py-3 px-6 text-left">Rp {item.total.toLocaleString('id-ID')}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
-                <button onClick={downloadFinancialReport} className="mb-4 bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600">Unduh Laporan Keuangan</button>
+                <div className="flex justify-between items-center mt-4">
+                    <button onClick={downloadDetailedReport} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600">Unduh Laporan Rinci</button>
+                    {totalDetailedPages > 1 && <div className="flex items-center space-x-2"><button onClick={() => setDetailedPage(p => Math.max(1, p - 1))} disabled={detailedPage === 1} className="px-3 py-1 border rounded-lg disabled:opacity-50">Prev</button><span>Halaman {detailedPage} dari {totalDetailedPages}</span><button onClick={() => setDetailedPage(p => Math.min(totalDetailedPages, p + 1))} disabled={detailedPage === totalDetailedPages} className="px-3 py-1 border rounded-lg disabled:opacity-50">Next</button></div>}
+                </div>
             </div>
 
             <div className="border-t pt-8">
@@ -924,11 +976,9 @@ const ReportsPage = () => {
                     <table className="min-w-full bg-white rounded-lg shadow">
                         <thead><tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal"><th className="py-3 px-6 text-left">Nama Item</th><th className="py-3 px-6 text-left">Jumlah Terjual</th><th className="py-3 px-6 text-left">Total Penjualan</th></tr></thead>
                         <tbody className="text-gray-600 text-sm font-light">
-                            {paginatedItems.map(item => (
+                            {paginatedItemSales.map(item => (
                                 <tr key={item.name} className="border-b border-gray-200 hover:bg-gray-100">
-                                    <td className="py-3 px-6 text-left">{item.name}</td>
-                                    <td className="py-3 px-6 text-left">{item.quantity}</td>
-                                    <td className="py-3 px-6 text-left">Rp {item.total.toLocaleString('id-ID')}</td>
+                                    <td className="py-3 px-6 text-left">{item.name}</td><td className="py-3 px-6 text-left">{item.quantity}</td><td className="py-3 px-6 text-left">Rp {item.total.toLocaleString('id-ID')}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -936,7 +986,7 @@ const ReportsPage = () => {
                 </div>
                 <div className="flex justify-between items-center mt-4">
                     <button onClick={downloadItemSalesReport} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-600">Unduh Laporan Item</button>
-                    {totalPages > 1 && <div className="flex items-center space-x-2"><button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 border rounded-lg disabled:opacity-50">Prev</button><span>Halaman {currentPage} dari {totalPages}</span><button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 border rounded-lg disabled:opacity-50">Next</button></div>}
+                    {totalItemPages > 1 && <div className="flex items-center space-x-2"><button onClick={() => setItemPage(p => Math.max(1, p - 1))} disabled={itemPage === 1} className="px-3 py-1 border rounded-lg disabled:opacity-50">Prev</button><span>Halaman {itemPage} dari {totalItemPages}</span><button onClick={() => setItemPage(p => Math.min(totalItemPages, p + 1))} disabled={itemPage === totalItemPages} className="px-3 py-1 border rounded-lg disabled:opacity-50">Next</button></div>}
                 </div>
             </div>
         </div>
