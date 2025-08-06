@@ -216,7 +216,7 @@ const MainContent = () => {
 };
 
 const Navbar = () => {
-    const { userRole, currentPage, setCurrentPage, notifications, handleLogout } = useContext(AppContext);
+    const { userRole, username, currentPage, setCurrentPage, notifications, handleLogout } = useContext(AppContext);
     const menuItems = [
         { name: 'Dashboard', page: 'dashboard', roles: ['kasir', 'desainer', 'superviser', 'owner'] },
         { name: 'Pesanan', page: 'orders', roles: ['kasir', 'desainer', 'superviser', 'owner'] },
@@ -230,18 +230,23 @@ const Navbar = () => {
     ];
     return (
         <nav className="bg-white shadow-lg rounded-lg p-4">
-            <ul className="flex flex-wrap justify-center items-center gap-4">
-                {menuItems.map((item) => (
-                    item.roles.includes(userRole) && (<li key={item.page}><button onClick={() => setCurrentPage(item.page)} className={`px-4 py-2 rounded-lg font-semibold transition-colors ${currentPage === item.page ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>{item.name}</button></li>)
-                ))}
-                <li className="relative">
-                    <button onClick={() => setCurrentPage('orders')} className="p-2 rounded-full hover:bg-gray-200">
-                        <BellIcon />
-                        {notifications.length > 0 && <span className="absolute top-0 right-0 block h-4 w-4 transform -translate-y-1/2 translate-x-1/2 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">{notifications.length}</span>}
-                    </button>
-                </li>
-                <li><button onClick={handleLogout} className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors">Logout</button></li>
-            </ul>
+            <div className="flex flex-wrap justify-between items-center gap-4">
+                <ul className="flex flex-wrap justify-center items-center gap-4">
+                    {menuItems.map((item) => (
+                        item.roles.includes(userRole) && (<li key={item.page}><button onClick={() => setCurrentPage(item.page)} className={`px-4 py-2 rounded-lg font-semibold transition-colors ${currentPage === item.page ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>{item.name}</button></li>)
+                    ))}
+                </ul>
+                <div className="flex items-center gap-4">
+                    <span className="text-sm text-gray-600">Login sebagai: <span className="font-bold">{username}</span></span>
+                    <div className="relative">
+                        <button onClick={() => setCurrentPage('orders')} className="p-2 rounded-full hover:bg-gray-200">
+                            <BellIcon />
+                            {notifications.length > 0 && <span className="absolute top-0 right-0 block h-4 w-4 transform -translate-y-1/2 translate-x-1/2 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">{notifications.length}</span>}
+                        </button>
+                    </div>
+                    <button onClick={handleLogout} className="px-4 py-2 rounded-lg bg-red-500 text-white font-semibold hover:bg-red-600 transition-colors">Logout</button>
+                </div>
+            </div>
         </nav>
     );
 };
@@ -275,7 +280,6 @@ const Login = () => {
                     <div className="mb-6"><label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">Password</label><input type="password" id="password" value={password} onChange={(e) => setPassword(e.target.value)} className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" /></div>
                     {error && <p className="text-red-500 text-xs italic mb-4">{error}</p>}
                     <div className="flex items-center justify-between"><button type="submit" className="w-full bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors">Masuk</button></div>
-                    <div className="mt-4 text-center text-sm text-gray-500"><p>Credentials: </p><p>Username: owner, Password: 123</p></div>
                 </form>
             </div>
         </div>
@@ -379,6 +383,7 @@ const OrdersPage = () => {
     
     const [isEditing, setIsEditing] = useState(false);
     const [currentOrder, setCurrentOrder] = useState(initialOrderState);
+    const [orderDate, setOrderDate] = useState(new Date().toISOString().split('T')[0]);
     const [message, setMessage] = useState('');
     const [modal, setModal] = useState({ show: false, action: null, itemId: null });
 
@@ -421,9 +426,14 @@ const OrdersPage = () => {
             const customerRef = doc(db, `artifacts/${appId}/public/data/customers`, currentOrder.customerPhone);
             await setDoc(customerRef, { name: currentOrder.customerName, phone: currentOrder.customerPhone }, { merge: true });
         }
+        
+        const combinedDate = new Date(orderDate);
+        const now = new Date();
+        combinedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
 
         const orderData = {
             ...currentOrder,
+            createdAt: combinedDate.toISOString(),
             items: JSON.stringify(currentOrder.items),
             paidAmount: 0,
             paymentStatus: 'Belum Lunas',
@@ -439,7 +449,7 @@ const OrdersPage = () => {
                 setMessage('Pesanan berhasil diperbarui!');
             } else {
                 const orderId = generateOrderId();
-                await setDoc(doc(db, `artifacts/${appId}/public/data/orders`, orderId), { ...orderData, id: orderId, createdAt: new Date().toISOString() });
+                await setDoc(doc(db, `artifacts/${appId}/public/data/orders`, orderId), { ...orderData, id: orderId });
                 setMessage('Pesanan berhasil ditambahkan!');
             }
             setCurrentOrder(initialOrderState);
@@ -462,6 +472,7 @@ const OrdersPage = () => {
             ...rest, 
             items: JSON.parse(order.items),
         });
+        setOrderDate(new Date(order.createdAt).toISOString().split('T')[0]);
         setIsEditing(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
@@ -504,7 +515,6 @@ const OrdersPage = () => {
                         return `
                             <div>
                                 <p style="margin: 0; font-weight: bold;">${index + 1}. ${product ? product.name : 'N/A'} <span style="float: right;">Rp ${itemPrice.toLocaleString('id-ID')}</span></p>
-                                ${product?.calculationMethod === 'dimensi' ? `<p style="margin: 0 0 0 15px; font-size: 9px;">Dimensi : ${item.width}x${item.height}</p>` : ''}
                                 <p style="margin: 0 0 0 15px; font-size: 9px;">Jumlah : ${item.quantity}X</p>
                                 ${item.description ? `<p style="margin: 0 0 0 15px; font-size: 9px;">Note : ${item.description}</p>` : ''}
                             </div>
@@ -541,7 +551,7 @@ const OrdersPage = () => {
             <h2 className="text-2xl font-bold mb-4">{isEditing ? 'Edit Pesanan' : 'Tambah Pesanan'}</h2>
             {message && <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-4">{message}</div>}
             <form onSubmit={handleSubmitOrder} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-gray-700">Nama Pemesan</label>
                         <input list="customer-list" type="text" value={currentOrder.customerName} onChange={(e) => { setCurrentOrder({ ...currentOrder, customerName: e.target.value }); handleCustomerSelect(e.target.value); }} className="w-full p-2 border border-gray-300 rounded-lg" required />
@@ -550,6 +560,7 @@ const OrdersPage = () => {
                         </datalist>
                     </div>
                     <div><label className="block text-gray-700">No. Telepon</label><input type="tel" value={currentOrder.customerPhone} onChange={(e) => setCurrentOrder({ ...currentOrder, customerPhone: e.target.value })} className="w-full p-2 border border-gray-300 rounded-lg" required /></div>
+                    <div><label className="block text-gray-700">Tanggal Pesanan</label><input type="date" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg" required /></div>
                 </div>
 
                 <div><h3 className="text-xl font-semibold mt-4 mb-2">Item Pesanan</h3>{currentOrder.items.map((item, index) => (<div key={index} className="grid grid-cols-1 md:grid-cols-6 gap-2 mb-2 p-2 bg-gray-50 rounded-lg border">
@@ -760,14 +771,20 @@ const ExpensesPage = () => {
     const { db, appId, expenses, userRole, username, userId } = useContext(AppContext);
     const [description, setDescription] = useState('');
     const [cost, setCost] = useState(0);
+    const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
     const [message, setMessage] = useState('');
     const [modal, setModal] = useState({ show: false, action: null, itemId: null });
 
     const handleSubmitExpense = async (e) => {
         e.preventDefault();
         if (!db) return;
+        
+        const combinedDate = new Date(expenseDate);
+        const now = new Date();
+        combinedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+
         try {
-            await addDoc(collection(db, `artifacts/${appId}/public/data/expenses`), { description, cost, createdAt: new Date().toISOString(), createdBy: { userId, username } });
+            await addDoc(collection(db, `artifacts/${appId}/public/data/expenses`), { description, cost, createdAt: combinedDate.toISOString(), createdBy: { userId, username } });
             setMessage('Pengeluaran berhasil ditambahkan!');
             setDescription(''); setCost(0);
             setTimeout(() => setMessage(''), 3000);
@@ -795,6 +812,7 @@ const ExpensesPage = () => {
             <h2 className="text-2xl font-bold mb-4">Transaksi Pengeluaran</h2>
             {message && <div className="bg-green-100 text-green-700 p-3 rounded-lg mb-4">{message}</div>}
             <form onSubmit={handleSubmitExpense} className="space-y-4">
+                <div><label className="block text-gray-700">Tanggal</label><input type="date" value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg" required /></div>
                 <div><label className="block text-gray-700">Deskripsi</label><input type="text" value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-2 border border-gray-300 rounded-lg" required /></div>
                 <div><label className="block text-gray-700">Biaya</label><input type="number" value={cost} onChange={(e) => setCost(parseFloat(e.target.value) || 0)} className="w-full p-2 border border-gray-300 rounded-lg" required /></div>
                 <button type="submit" className="w-full bg-blue-500 text-white font-bold py-2 rounded-lg hover:bg-blue-600">Tambah Pengeluaran</button>
@@ -938,6 +956,7 @@ const ReportsPage = () => {
                     const product = products.find(p => p.id === item.productId);
                     if (product) {
                         sales.push({
+                            tanggal: new Date(order.createdAt).toLocaleDateString('id-ID'),
                             namaPemesan: order.customerName,
                             namaProduk: product.name,
                             dimensi: product.calculationMethod === 'dimensi' ? `${item.width}x${item.height}` : '-',
@@ -981,6 +1000,7 @@ const ReportsPage = () => {
     
     const downloadItemSalesReport = () => {
         const dataForCSV = itemSalesReport.map(item => ({
+            "Tanggal": item.tanggal,
             "Nama Pemesan": item.namaPemesan,
             "Nama Produk": item.namaProduk,
             "Dimensi": item.dimensi,
@@ -1054,10 +1074,11 @@ const ReportsPage = () => {
                 <h2 className="text-2xl font-bold mb-4">Laporan Penjualan per Item</h2>
                 <div className="overflow-x-auto">
                     <table className="min-w-full bg-white rounded-lg shadow">
-                        <thead><tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal"><th className="py-3 px-6 text-left">Nama Pemesan</th><th className="py-3 px-6 text-left">Nama Produk</th><th className="py-3 px-6 text-left">Dimensi</th><th className="py-3 px-6 text-left">Jumlah</th><th className="py-3 px-6 text-left">Harga</th></tr></thead>
+                        <thead><tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal"><th className="py-3 px-6 text-left">Tanggal</th><th className="py-3 px-6 text-left">Nama Pemesan</th><th className="py-3 px-6 text-left">Nama Produk</th><th className="py-3 px-6 text-left">Dimensi</th><th className="py-3 px-6 text-left">Jumlah</th><th className="py-3 px-6 text-left">Harga</th></tr></thead>
                         <tbody className="text-gray-600 text-sm font-light">
                             {paginatedItemSales.map((item, index) => (
                                 <tr key={index} className="border-b border-gray-200 hover:bg-gray-100">
+                                    <td className="py-3 px-6 text-left">{item.tanggal}</td>
                                     <td className="py-3 px-6 text-left">{item.namaPemesan}</td>
                                     <td className="py-3 px-6 text-left">{item.namaProduk}</td>
                                     <td className="py-3 px-6 text-left">{item.dimensi}</td>
