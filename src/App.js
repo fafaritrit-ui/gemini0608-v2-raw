@@ -467,7 +467,7 @@ const OrdersPage = () => {
             const change = (order.paidAmount || 0) > order.totalCost ? (order.paidAmount || 0) - order.totalCost : 0;
             const remaining = order.totalCost - (order.paidAmount || 0) > 0 ? order.totalCost - (order.paidAmount || 0) : 0;
             let receiptContent = `
-                <div style="font-family: 'Courier New', Courier, monospace; font-size: 12px; width: 300px; padding: 10px;">
+                <div style="font-family: 'Courier New', Courier, monospace; font-size: 16px; width: 300px; padding: 10px;">
                     <div style="text-align: center; margin-bottom: 10px;">
                         <h2 style="margin: 0; font-size: 18px;">${storeSettings.storeName || 'SKETSA STICKER'}</h2>
                         <p style="margin: 0;">${storeSettings.address || 'JL. KH. Syafii No.100 Kav.8 Suci'}</p>
